@@ -23,7 +23,7 @@
 		  -->
 		
 		<property name="show_sql">true</property>
-		<property name="format_sql">false</property>
+		<property name="format_sql">true</property>
 		<property name="hbm2ddl.auto">update</property>
 		
 		<!-- 如果session获取的方式是getCurrentSession的时候，需要添加此属性，代表jdbc事务，如果是jta全局事务，需要写jta，单纯的opensession不需要添加这个属性 -->
@@ -34,7 +34,13 @@
 		<property name="cache.use_query_cache">true</property>
 		
 		<!-- 指定映射文件的路径 -->
-		<mapping resource="com/jinan/www/entity/animals.hbm.xml"/>
+		<mapping resource="com/jinan/www/entity/Seller.hbm.xml"/>
+		<mapping resource="com/jinan/www/entity/Customer.hbm.xml"/>
+		<mapping resource="com/jinan/www/entity/Commodity.hbm.xml"/>
+		<!-- 
+		<mapping resource="com/jinan/www/entity/OrderItem.hbm.xml"/>
+		<mapping resource="com/jinan/www/entity/OrderForm.hbm.xml"/>
+		 -->
     </session-factory>
 
 </hibernate-configuration>
