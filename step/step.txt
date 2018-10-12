@@ -213,6 +213,71 @@
 			3，hibernate的混存在提高检索的同时，也会增加服务器的消耗，所以要注意缓存的使用策略.	
 		
 ---7.数据库连接池
+	
+	摘抄：https://blog.csdn.net/super712/article/details/52823192
+	
+	三种连接都是以连接MySQl为例。 
+		<!-- JDBC驱动程序 --> 
+		< property name="connection.driver_class">org.gjt.mm.mysql.Driver</property> <property name="connection.url">jdbc:mysql://localhost:3306/struts?useUnicode=true&characterEncoding=GBK</property> <!-- 数据库用户名 -->
+		< property name="connection.username">root</property> <!-- 数据库密码 --> 
+		< property name="connection.password">8888</property> 
+		上面的一段配置，在c3p0和dbcp中，都是必需的，因为hibernate会根据上述的配置来生成connections，再交给c3p0或dbcp管理.但是，proxool则不能，虽然说服文档上说proxool也可以和hibernate结合,但我按照官方文档上的说明怎么配也出错，而且，到了sun和hibernat有的官方网站上问了几天，都没有一个人回复。后来我只能让proxool自身来生成连接，这在下面再讲。
+		1 C3P0 
+		只需在hibernate.cfg.xml中加入 
+		<property name="c3p0.min_size">5</property> 
+		< property name="c3p0.max_size">30</property> 
+		< property name="c3p0.time_out">1800</property> 
+		< property name="c3p0.max_statement">50</property> 
+		还有在classespath中加入c3p0-0.8.4.5.jar 
+		2 dbcp 
+		在hibernate.cfg.xml中加入 
+		<property name="dbcp.maxActive">100</property> 
+		< property name="dbcp.whenExhaustedAction">1</property> 
+		< property name="dbcp.maxWait">60000</property> 
+		< property name="dbcp.maxIdle">10</property> 
+		< property name="dbcp.ps.maxActive">100</property> 
+		< property name="dbcp.ps.whenExhaustedAction">1</property> 
+		< property name="dbcp.ps.maxWait">60000</property> 
+		< property name="dbcp.ps.maxIdle">10</property> 
+		还有在classespath中加入commons-pool-1.2.jar 和commons-dbcp-1.2.1.jar. 
+		3 proxool 
+		在hibernate.cfg.xml中加入 
+		<property name="proxool.pool_alias">pool1</property> 
+		< property name="proxool.xml">ProxoolConf.xml</property> 
+		< property name="connection.provider_class">net.sf.hibernate.connection.ProxoolConnectionProvider</property>
+		然后，在和hibernate.cfg.xml同一个目录下，加一个ProxoolConf.xml文件，内容为 
+		<?xml version="1.0" encoding="utf-8"?> 
+		< !-- the proxool configuration can be embedded within your own application's. 
+		Anything outside the "proxool" tag is ignored. --> 
+		< something-else-entirely> 
+		< proxool> 
+		< alias>pool1</alias> 
+		< !--proxool只能管理由自己产生的连接--> 
+		< driver-url>jdbc:mysql://localhost:3306/struts?useUnicode=true&characterEncoding=GBK</driver-url>
+		< driver-class>org.gjt.mm.mysql.Driver</driver-class> 
+		< driver-properties> 
+		< property name="user" value="root"/> 
+		< property name="password" value="8888"/> 
+		< /driver-properties> 
+		< !-- proxool自动侦察各个连接状态的时间间隔(毫秒),侦察到空闲的连接就马上回收,超时的销毁--> 
+		< house-keeping-sleep-time>90000</house-keeping-sleep-time> 
+		< !-- 指因未有空闲连接可以分配而在队列中等候的最大请求数,超过这个请求数的用户连接就不会被接受--> 
+		< maximum-new-connections>20</maximum-new-connections> 
+		< !-- 最少保持的空闲连接数--> 
+		< prototype-count>5</prototype-count> 
+		< !-- 允许最大连接数,超过了这个连接，再有请求时，就排在队列中等候，最大的等待请求数由maximum-new-connections决定--> 
+		< maximum-connection-count>100</maximum-connection-count> 
+		< !-- 最小连接数--> 
+		< minimum-connection-count>10</minimum-connection-count> 
+		< /proxool> 
+		< /something-else-entirely> 
+		并在classespath中加入proxool-0.8.3.jar 
+		结论： 
+		由于在hibernate3.0中，已经不再支持dbcp了，hibernate的作者在hibernate.org中，明确指出在实践中发现dbcp有BUG,在某些种情会产生很多空连接不能释放，所以抛弃了对dbcp的支持。我不知是否在dbcp最新版本中解决了这个问题，我以前在一个访问量不大的项目中用过dbcp，运行了一年多都没出现问题。不过在网上的确也有不少网友指出dbcp在大型的应用中会出现不稳定的情况。所以在真相未经证实的情况下，我觉得对dbcp持慎重的态度。
+		至于c3p0，有评论说它的算法不是最优的，而且，我在matrix中，见到有网友做了一个实验，在同一项目中分别用了几个常用的连接池，然后测试其性能，发现c3p0占用资源比较大，效率也不高。
+		所以，基于上述原因，我才花两晚的时间去研究proxool的配置，proxool不少行家推荐使用，而且暂时来说，是负面评价是最少的一个。在三星中也有项目是用proxool的。
+		
+		---------------------
 ---8.逆向工程，正向工程
 ---9.延迟加载。
 ---10.主键的生成策略
